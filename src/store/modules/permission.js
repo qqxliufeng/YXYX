@@ -3,6 +3,10 @@ import { getMenus } from '@/api/user'
 
 import Layout from '@/layout'
 
+const hiddenMenuList = [
+  '/system/menuButton'
+]
+
 /**
  * Use meta.role to determine if the current user has permission
  * @param roles
@@ -54,6 +58,7 @@ export function generaMenu(routes, data) {
       path: item.menuUrl === '#' ? item.menuUrl + '_key' : item.menuUrl,
       component: isMenu === 1 ? Layout : getViews(item.menuUrl),
       children: [],
+      hidden: hiddenMenuList.includes(item.menuUrl),
       name: item.menuUrl,
       meta: { title: item.menuName, id: item.menuId, roles: ['admin'], icon: 'people' }
     }

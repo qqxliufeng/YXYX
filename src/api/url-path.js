@@ -38,6 +38,8 @@ export const updateDept = baseModuleUrl + 'updateDept'
 
 export const deleteDepts = baseModuleUrl + 'deleteDepts'
 
+export const saveDept = baseModuleUrl + 'saveDept'
+
 // ****************系统管理 --- 部门管理 **************** //
 
 // ****************系统管理 --- 角色管理 **************** //
@@ -55,6 +57,58 @@ export const saveRoleMenus = baseModuleUrl + 'saveRoleMenus'
 export const queryAllMenuByRole = baseModuleUrl + 'queryAllMenuByRole'
 
 // ****************系统管理 --- 角色管理 **************** //
+
+// ****************系统管理 --- 菜单管理 **************** //
+
+export const queryAllMenu = baseModuleUrl + 'queryAllMenu'
+
+export const saveMenu = baseModuleUrl + 'saveMenu'
+
+export const updateMenu = baseModuleUrl + 'updateMenu'
+
+export const deleteMenu = baseModuleUrl + 'deleteMenu'
+
+// ****************系统管理 --- 菜单管理 **************** //
+
+// ****************系统管理 --- 按钮管理 **************** //
+
+export const queryAllButtonInMenu = baseModuleUrl + 'queryAllButtonInMenu'
+
+export const saveMenuButton = baseModuleUrl + 'saveMenuButton'
+
+export const deleteMenuButton = baseModuleUrl + 'deleteMenuButton'
+
+export const updateMenuButton = baseModuleUrl + 'updateMenuButton'
+
+export const queryAllUser = baseModuleUrl + 'queryAllUser'
+
+export const queryAllUserLike = baseModuleUrl + 'queryAllUserLike'
+
+export const queryMenuAndButtonByUser = baseModuleUrl + 'queryMenuAndButtonByUser'
+
+export const grantButtonToUser = baseModuleUrl + 'grantButtonToUser'
+
+// ****************系统管理 --- 按钮管理 **************** //
+
+// ****************系统管理 --- 学习卡管理 **************** //
+
+export const queryStudyCard = baseModuleUrl + 'queryStudyCard'
+
+export const queryStudyCardLike = baseModuleUrl + 'queryStudyCardLike'
+
+export const saveStudyCard = baseModuleUrl + 'saveStudyCard'
+
+export const uploadStudyCardExcel = baseModuleUrl + 'uploadStudyCardExcel'
+
+export const queryAllTextBookAndStudyCard = baseModuleUrl + 'queryAllTextBookAndStudyCard'
+
+export const queryTextBookByStudyCardId = baseModuleUrl + 'queryTextBookByStudyCardId'
+
+export const studyCardAssignedTextBook = baseModuleUrl + 'studyCardAssignedTextBook'
+
+export const editStudyCardInfo = baseModuleUrl + 'editStudyCardInfo'
+
+// ****************系统管理 --- 学习卡管理 **************** //
 
 // ****************会员管理 --- 学校管理 **************** //
 

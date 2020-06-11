@@ -12,7 +12,7 @@ export const HTTP_GET = 'GET'
 
 export const HTTP_POST = 'POST'
 
-export function http({ url, methods = HTTP_POST, data = {}, withRoleId = true, withUserId = true }) {
+export function http({ url, methods = HTTP_POST, data = {}, withRoleId = true, withUserId = true, responseType = '' }) {
   if (withRoleId && !data.hasOwnProperty('roleId')) {
     data.roleId = localStorage.getItem('roleId')
   }
@@ -20,7 +20,6 @@ export function http({ url, methods = HTTP_POST, data = {}, withRoleId = true, w
     data.userId = localStorage.getItem('userId')
   }
   if (methods === HTTP_POST) {
-    console.log(methods)
     return request({
       url,
       method: HTTP_POST,
@@ -30,7 +29,23 @@ export function http({ url, methods = HTTP_POST, data = {}, withRoleId = true, w
     return request({
       url,
       method: HTTP_GET,
-      params: data
+      params: data,
+      responseType
     })
   }
+}
+
+export function blobToExecl(data, fileName = new Date().toLocaleTimeString()) {
+  const blob = new Blob([data], {
+    type:
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8'
+  })
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const fname = fileName // 下载文件的名字
+  link.href = objectUrl
+  link.setAttribute('download', fname)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }

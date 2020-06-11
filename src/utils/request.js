@@ -27,6 +27,9 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data
+    if (res instanceof Blob) {
+      return res
+    }
     if (res.status !== 200) {
       const errMsg = res.msg || '请求失败'
       Message({
@@ -44,9 +47,11 @@ service.interceptors.response.use(
         //     location.reload()
         //   })
         // })
-        // store.dispatch('user/resetToken').then(() => {
-        //   location.reload()
-        // })
+        if (errMsg === '登录已过期,请重新登陆') {
+          store.dispatch('user/resetToken').then(() => {
+            location.reload()
+          })
+        }
       }
       return Promise.reject(new Error(errMsg))
     } else {

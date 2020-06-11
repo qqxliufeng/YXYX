@@ -1,364 +1,290 @@
-<!-- 集团用户查询 -->
 <template>
-  <div class="app-container">
-    <!-- 搜索 -->
-    <div class="filter-container" style="border-bottom:1px solid #999;">
-      <!-- <el-input v-model="listQuery.userNameOrPhone" placeholder="用户名/手机号" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" /> -->
-      <!--   <el-button v-waves="" class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
-        搜索
-      </el-button> -->
-      <el-button class="filter-item" style="margin-left: 100px; " type="primary" icon="el-icon-edit" @click="handleCreate">
-        添加
-      </el-button>
-    </div>
-    <!-- table -->
-    <el-table ref="multipleTable" :data="list" tooltip-effect="dark" style="width: 100%" :fit="true">
-      <!-- <el-table-column type="selection" width="55" label='操作'/> -->
-      <!--  <el-table-column label="创建人ID" width="120">
-        <template slot-scope="scope">
-          {{ scope.row.createId }}
-        </template>
-      </el-table-column> -->
-      <el-table-column prop="roleName" label="角色名称" width="" />
-      <el-table-column prop="roleCode" label="角色简称" width="" />
-      <el-table-column prop="dept.deptName" label="角色所属部门" width="" />
-      <el-table-column prop="dr" label="删除标识" show-overflow-tooltip="">
-        <template slot-scope="scope">
-          {{ scope.row.dr===1?'已删除':'未删除' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="350" class-name="small-padding fixed-width">
-        <template slot-scope="{row,$index}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            编辑
-          </el-button>
-          <el-button type="primary" size="mini" style="width:90px;" @click="handleRoleMenus(row)">
-            分配菜单权限
-          </el-button>
-
-          <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleDelete(row,$index)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <!-- 分页 -->
-    <pagination v-show="total&gt;0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="getList" />
-
-    <!-- 编辑角色dialog -->
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="120px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="角色名称  :" prop="roleName">
-          <el-input v-model="temp.roleName" />
-        </el-form-item>
-        <el-form-item label="角色简称  :" prop="roleCode">
-          <el-input v-model="temp.roleCode" />
-        </el-form-item>
-        <el-form-item label="角色所属部门:" prop="deptId">
-          <el-select v-model="temp.deptId" class="filter-item" placeholder="请输入">
-            <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
-          </el-select>
-        </el-form-item>
-
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          确定
-        </el-button>
-      </div>
-    </el-dialog>
-    <!-- 删除确认框 -->
-    <el-dialog title="提示" :visible.sync="delVisible" width="300px" center>
-      <div class="del-dialog-cnt">删除不可恢复，是否确定删除？</div>
+  <div class="container">
+    <table-header title="基本操作" :show-delete="false" @onadd="onAdd" />
+    <el-card :body-style="{padding: 0}">
+      <el-table
+        v-loading="loading"
+        :stripe="tableConfig.stripe"
+        :header-cell-style="tableConfig.headerCellStyle"
+        :data="tableData"
+        :border="tableConfig.border"
+        :size="tableConfig.size"
+        :default-sort="tableConfig.defalutSort"
+        :style="tableConfig.style"
+        @selection-change="handleSelectionChange"
+      >
+        <!-- createId: 1
+      createTime: "2020-03-17 08:53:52"
+      dept: {createId: 1, createTime: "2020-03-13 21:30:49", deptCode: null, deptId: 1, deptName: "超级管理", dr: 0,…}
+      deptId: 1
+      dr: 0
+      roleCode: "ROLE_admin"
+      roleId: 1
+      roleName: "超级管理员"
+      updateId: null
+        updateTime: null-->
+        <el-table-column align="center" label="ID" prop="roleId" />
+        <el-table-column align="center" prop="roleName" label="角色名称" />
+        <el-table-column align="center" prop="roleCode" label="角色编码" />
+        <el-table-column align="center" label="所属部门">
+          <template slot-scope="scope">
+            <el-link>{{ scope.row.dept.deptName | emptyFormat }}</el-link>
+          </template>
+        </el-table-column>
+        <el-table-column align="center" prop="createTime" label="创建时间" width="140" />
+        <el-table-column align="center" prop="dr" label="删除状态" :formatter="statusFormatter" />
+        <el-table-column
+          align="center"
+          label="操作"
+          width="250"
+          class-name="small-padding fixed-width"
+        >
+          <template slot-scope="scope">
+            <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+            <el-button
+              type="warning"
+              size="mini"
+              style="width:90px;"
+              @click="handleRoleMenus(scope.row)"
+            >菜单权限</el-button>
+            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+    <table-foot
+      :total="total"
+      :page-size="pageSize"
+      @prev-click="prevClick"
+      @next-click="nextClick"
+      @current-change="currentChange"
+      @refresh="reloadData"
+    />
+    <el-dialog :visible.sync="dialogMenuVisible" title="角色菜单权限">
+      <el-tree
+        ref="menuTree"
+        :data="menuObj.roleMenus"
+        show-checkbox
+        node-key="menuId"
+        :default-expanded-keys="menuObj.defalutExpandedKeys"
+        :default-checked-keys="menuObj.defalutCheckedKeys"
+        :props="menuObj.defaultProps"
+      />
       <span slot="footer" class="dialog-footer">
-        <el-button @click="delVisible = false">取 消</el-button>
-        <el-button type="primary" @click="deleteRow">确 定</el-button>
+        <el-button @click="dialogMenuVisible = false">取消</el-button>
+        <el-button type="primary" @click="roleMenusConfirm">确认</el-button>
       </span>
     </el-dialog>
-
-    <!-- 菜单分配dialog -->
-    <el-dialog :visible.sync="dialogMenuVisible" title="为角色分配菜单权限">
-      <el-form ref="rolesForm" border="" fit="" highlight-current-row="" style="width: 100%">
-        <el-form-item v-for="menu in RoleMenus" label="">
-          <template>
-            <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate" @change="handleCheckAllChange">{{ menu.menuName }}</el-checkbox>
-            <div style="margin:5px 0;" />
-            <el-checkbox-group v-model="menuIds">
-              <el-checkbox v-for="item in menu.children" :label="item.menuId" :checked="item.isSelect" @change="handleCheckedChange">{{ item.menuName }}</el-checkbox>
-            </el-checkbox-group>
-          </template>
+    <el-dialog :title="modeObj.mode === 'add' ? '添加角色' : '编辑角色'" :visible.sync="dialogFormVisible">
+      <el-form
+        ref="dataForm"
+        :model="modeObj.temp"
+        label-position="left"
+        label-width="120px"
+        style="width: 400px; margin-left:50px;"
+      >
+        <el-form-item label="角色名称" prop="roleName">
+          <el-input v-model="modeObj.temp.roleName" placeholder="请输入角色名称" />
+        </el-form-item>
+        <el-form-item label="角色编码" prop="roleCode">
+          <el-input v-model="modeObj.temp.roleCode" placeholder="请输入角色编码" />
+        </el-form-item>
+        <el-form-item label="所属部门" prop="deptId">
+          <el-select v-model="modeObj.temp.deptId" class="filter-item" placeholder="请选择部门">
+            <el-option
+              v-for="item of allDepts"
+              :key="item.deptId"
+              :label="item.deptName"
+              :value="item.deptId"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
-
-      <span slot="footer" class="dialog-footer">
-
-        <el-button @click="dialogMenuVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="">
-          确认
-        </el-button> </span>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleDialogConfirm">确定</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
+
 <script>
-import Pagination from '@/components/Pagination'
-import waves from '@/directive/waves' // waves directive
-
-import { fetchRolesList, saveRole, updateRole, deleteRole, getDepts, fetchAllMenuByRole } from '@/api/system'
-
-const deptOptions = []
-const RoleMenusOptions = []
+import TableMixins from '../../mixins/table-mixins'
 export default {
-  directives: { waves },
-
-  components: { Pagination },
+  name: 'Roles',
+  mixins: [TableMixins],
   data() {
     return {
-      list: [],
-      RoleMenusOptions: [],
-      RoleMenus: [],
-      menuIds: [],
-      isIndeterminate: true,
-      checkAll: false,
-      total: 1,
-      deleteThis: '',
-      deptIds: '',
-      deptOptions: '',
-      delVisible: false, // 删除提示弹框的状态
-      dialogMenuVisible: false, // 删除提示弹框的状态
-      listQuery: {
-        pageNum: 0,
-        pageSize: 20
-
+      allDepts: [],
+      dialogMenuVisible: false,
+      dialogFormVisible: false,
+      menuObj: {
+        roleMenus: [],
+        defalutExpandedKeys: [],
+        defalutCheckedKeys: [],
+        defaultProps: {
+          label: 'menuName',
+          children: 'children'
+        }
       },
-      temp: {
-        menuName: '',
+      modeObj: {
+        mode: 'edit',
+        temp: {
+          roleName: '',
+          roleCode: '',
+          deptId: ''
+        }
+      },
+      tempItem: null
+    }
+  },
+  mounted() {
+    this.getData()
+    this.getAllDepts()
+  },
+  methods: {
+    statusFormatter(item) {
+      return item.dr === 0 ? '未删除' : '已删除'
+    },
+    onAdd() {
+      this.dialogFormVisible = true
+      this.modeObj.mode = 'add'
+      this.modeObj.temp = {
+        roleName: '',
         roleCode: '',
         deptId: ''
-        // 新增用户数据
-      },
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: '编辑',
-        create: '新建'
-      },
-      rules: {
-        deptId: [{ type: 'number', message: '请选择', trigger: ['blur', 'change'] }],
-        roleName: [{ required: true, message: '请选择', trigger: 'blur' }],
-        roleCode: [{ required: true, message: '不能为空', trigger: 'blur' }]
       }
-    }
-  },
-  created() {
-    this.getList()
-  },
+    },
+    getData() {
+      this.$http({
+        url: this.$urlPath.queryRoles,
+        methods: this.HTTP_GET,
+        data: {
+          pageNum: this.page,
+          pageSize: this.pageSize
+        }
+      }).then(res => {
+        this.onSuccess(res.obj)
+      })
+    },
+    getAllDepts() {
+      this.$http({
+        url: this.$urlPath.queryDepts,
+        methods: this.HTTP_GET,
+        data: {
+          pageNum: 0,
+          pageSize: 10000
+        }
+      }).then(res => {
+        this.allDepts = res.obj.list
+      })
+    },
+    handleRoleMenusSelected(menus) {
+      menus.forEach(it => {
+        if (it.parentMenuId) {
+          if (it.select) {
+            this.menuObj.defalutCheckedKeys.push(it.menuId)
+          }
+        } else {
+          this.menuObj.defalutExpandedKeys.push(it.menuId)
+        }
+        if (
+          it.hasOwnProperty('children') &&
+          it.children != null &&
+          it.children.length > 0
+        ) {
+          this.handleRoleMenusSelected(it.children)
+        }
+      })
+    },
+    handleRoleMenus(item) {
+      this.tempItem = item
+      this.$http({
+        url: this.$urlPath.queryAllMenuByRole,
+        methods: this.HTTP_GET,
+        data: {
+          roleId: item.roleId
+        }
+      }).then(res => {
+        this.menuObj.roleMenus = res.obj
+        if (this.menuObj.roleMenus && this.menuObj.roleMenus.length > 0) {
+          this.menuObj.defalutCheckedKeys = []
+          this.menuObj.defalutExpandedKeys = []
+          this.handleRoleMenusSelected(this.menuObj.roleMenus)
+          this.dialogMenuVisible = true
+        }
+      })
+    },
+    roleMenusConfirm() {
+      this.dialogMenuVisible = false
+      const checkedKeys = this.$refs.menuTree.getCheckedKeys()
+      this.$http({
+        url: this.$urlPath.saveRoleMenus,
+        data: {
+          roleId: this.tempItem.roleId,
+          menuIds: checkedKeys.length > 0 ? checkedKeys.join(',') : null
+        }
+      }).then(res => {
+        this.$successMsg('操作成功')
+      })
+    },
 
-  methods: {
-    toggleSelection(rows) {
-      if (rows) {
-        rows.forEach(row => {
-          this.$refs.multipleTable.toggleRowSelection(row)
+    handleDialogConfirm() {
+      if (!this.modeObj.temp.roleName) {
+        this.$errorMsg('请输入角色名称')
+        return
+      }
+      if (!this.modeObj.temp.roleCode) {
+        this.$errorMsg('请输入角色编码')
+        return
+      }
+      if (!this.modeObj.temp.deptId) {
+        this.$errorMsg('请选择所属部门')
+        return
+      }
+      this.dialogFormVisible = false
+      if (this.modeObj.mode === 'add') {
+        this.$http({
+          url: this.$urlPath.saveRole,
+          data: this.modeObj.temp
+        }).then(res => {
+          this.$successMsg('添加成功')
+          this.getData()
         })
       } else {
-        this.$refs.multipleTable.clearSelection()
-      }
-    },
-
-    getList() {
-      // 获取数据
-      this.listLoading = true
-      fetchRolesList(this.listQuery).then(response => {
-        console.log(response.obj)
-        this.list = response.obj.list
-        this.total = response.obj.total
-        console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-    btnList() {
-      // 搜索
-      this.listLoading = true
-      fetchDeptsList(this.listQuery).then(response => {
-        console.log(response.obj)
-        this.list = response.obj.list
-        this.total = response.obj.total
-        console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-
-    getDept() {
-      getDepts().then(response => {
-        console.log(response.obj)
-        this.deptOptions = []
-        this.deptOptions = response.obj.list
-        // this.list = response.obj.list
-        // this.total = response.obj.total
-        // console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-    // 添加
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-      this.getDept()
-    },
-    createData() {
-      console.log('这是验证提交')
-      this.$refs['dataForm'].validate((valid) => {
-        console.log(this.temp)
-        if (valid) {
-          saveRole(this.temp).then(() => {
-            this.getList()
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: '新增数据成功',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    handleUpdate(row) {
-      console.log('更新操作')
-      this.getDept()
-      // this.temp = Object.assign({}, row) // copy obj
-      this.temp.deptId = row.deptId
-      this.temp.roleId = row.roleId
-      this.temp.roleName = row.roleName
-      this.temp.roleCode = row.roleCode
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          // this.$delete(tempData, 'dept')
-          updateRole(tempData).then(() => {
-            // const index = this.list.findIndex(v => v.id === this.temp.id)
-            // this.list.splice(index, 1, this.temp)
-            this.isReadOnly = false
-            this.dialogFormVisible = false
-            this.getList()
-            this.$notify({
-              title: 'Success',
-              message: '修改成功',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    // 删除
-    handleDelete(row) {
-      this.delVisible = true// 显示删除弹框
-      this.deleteThis = row.roleId
-    },
-    deleteRow() {
-      deleteRole(this.deleteThis).then(response => {
-        if (response.status == '200') {
-          this.getList()
-          this.$message.success('删除成功')
-          this.deleteThis = ''
-        }
-      }).catch(error => {
-        console.log(error)
-        this.$message.error('删除失败')
-      })
-      this.delVisible = false// 关闭删除提示模态框
-    },
-    // 角色权限分配
-    handleRoleMenus(row) {
-      this.$forceUpdate()
-      fetchAllMenuByRole(row.roleId).then(response => {
-        this.RoleMenus = []
-        if (response.status == '200') {
-          this.$forceUpdate()
-          this.RoleMenus = response.obj
-          console.log('SHUJU ')
-          console.log(this.RoleMenusOptions)
-          console.log(this.RoleMenus)
-          // this.$set(this.RoleMenus,isSelect, false)
-          this.dialogMenuVisible = true// 弹框的状态
-        }
-        this.$nextTick(() => {
-          this.$refs['rolesForm'] = []
+        this.modeObj.temp.roleId = this.tempItem.roleId
+        this.$http({
+          url: this.$urlPath.updateRole,
+          data: this.modeObj.temp
+        }).then(res => {
+          this.$successMsg('修改成功')
+          this.getData()
         })
-      }).catch(error => {
-        console.log(error)
-        this.$message.error('加载失败')
-      })
-    },
-    handleCheckAllChange(val) {
-      this.$forceUpdate()
-      this.menuIds = val ? RoleMenusOptions : []
-      this.isIndeterminate = false
-    },
-    handleCheckedChange(value) {
-      console.log(this.menuIds)
-      const checkedCount = value.length
-      alert(checkedCount)
-      this.checkAll = checkedCount === this.menu.length
-      this.isIndeterminate = checkedCount > 0 && checkedCount < this.menu.length
-    },
-
-    resetTemp() {
-      this.temp = {
-        deptId: '',
-        roleName: '',
-        roleCode: ''
       }
+    },
+    handleUpdate(item) {
+      this.tempItem = item
+      this.dialogFormVisible = true
+      this.modeObj.mode = 'edit'
+      this.modeObj.temp = {
+        roleName: item.roleName,
+        roleCode: item.roleCode,
+        deptId: item.deptId
+      }
+    },
+    handleDelete(item) {
+      this.confirmDeleteSingle(_ => {
+        this.$http({
+          url: this.$urlPath.deleteRole,
+          data: {
+            roleId: item.roleId
+          }
+        }).then(res => {
+          this.$successMsg('删除成功')
+          this.getData()
+        })
+      })
     }
-
   }
-
 }
-
 </script>
-  <style scoped="">
-
-  .el-form-item label:after {
-        content: "";
-        display: inline-block;
-        width: 100%;
-    }
-
-    .el-form-item__label {
-        text-align: right;
-        height: 50px;
-    }
-
-    .el-form-item.is-required .el-form-item__label:before {
-        content: none !important;
-    }
-
-    .el-checkbox-group{
-      border-bottom:1px solid #eee;
-      padding-left:20px;
-      margin-bottom:10px;
-    }
-    .el-checkbox-group:last-child{
-      border-bottom:none;
-      padding-left:20px;
-    }
-</style>

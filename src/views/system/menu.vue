@@ -1,360 +1,236 @@
-<!-- 集团用户查询 -->
 <template>
-  <div class="app-container">
-    <!-- 搜索 -->
-    <div class="filter-container" style="border-bottom:1px solid #999;">
-      <!-- <el-input v-model="listQuery.userNameOrPhone" placeholder="用户名/手机号" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" /> -->
-      <!--   <el-button v-waves="" class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
-        搜索
-      </el-button> -->
-      <el-button class="filter-item" style="margin-left: 100px; " type="primary" icon="el-icon-edit" @click="handleCreate">
-        添加
-      </el-button>
-      <el-button class="filter-item" style="margin-left:50px; " type="primary" icon="" @click="delAll">
-        批量删除
-      </el-button>
-    </div>
-    <!-- table -->
-    <el-table ref="multipleTable" :data="list" tooltip-effect="dark" style="width: 100%" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" label="操作" />
-      <el-table-column label="创建人ID" width="120">
-        <template slot-scope="scope">
-          {{ scope.row.createId }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="deptName" label="部门名称" width="" />
-      <el-table-column prop="dr" label="删除标识" show-overflow-tooltip="">
-        <template slot-scope="scope">
-          {{ scope.row.dr===1?'已删除':'未删除' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" show-overflow-tooltip="">
-        <template slot-scope="scope">
-          {{ scope.row.status===1?'禁用':'正常' }}
-        </template>
-      </el-table-column>
-
-      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
-        <template slot-scope="{row,$index}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            编辑
-          </el-button>
-
-        <!--   <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleDelete(row,$index)">
-            删除
-          </el-button> -->
-        </template>
-      </el-table-column>
-    </el-table>
-    <!-- 分页 -->
-    <pagination v-show="total&gt;0" :total="total" :page.sync="listQuery.pageNum" :limit.sync="listQuery.pageSize" @pagination="getList" />
-    <!--    <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" /> -->
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="120px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="部门名称  :" prop="deptName">
-          <el-input v-model="temp.deptName" />
+  <div class="container">
+    <table-header title="基本操作" :show-delete="false" @onadd="onAdd" />
+    <!-- children: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+    createId: 1
+    createTime: "2020-03-12 18:46:21"
+    dr: 0
+    isSelect: false
+    menuButtons: null
+    menuId: 1
+    menuName: "系统管理"
+    menuSequence: 1
+    menuUrl: "/system"
+    parentMenuId: null
+    roles: null
+    select: false
+    updateId: null
+    updateTime: null-->
+    <el-card :body-style="{padding: 0}">
+      <el-table
+        v-loading="loading"
+        :stripe="tableConfig.stripe"
+        :header-cell-style="tableConfig.headerCellStyle"
+        :data="tableData"
+        :border="tableConfig.border"
+        :size="tableConfig.size"
+        :default-sort="tableConfig.defalutSort"
+        :style="tableConfig.style"
+        default-expand-all
+        row-key="menuId"
+        :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
+      >
+        <el-table-column align="center" prop="menuName" label="菜单名称" width />
+        <el-table-column align="center" prop="menuSequence" label="序号" show-overflow-tooltip />
+        <el-table-column align="center" prop="menuUrl" label="菜单地址" width />
+        <el-table-column align="center" prop="createTime" label="创建时间" show-overflow-tooltip />
+        <el-table-column
+          align="center"
+          label="操作"
+          width="200"
+          class-name="small-padding fixed-width"
+        >
+          <template slot-scope="scope">
+            <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+            <el-button type="danger" size="mini" @click="handleDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+    <el-dialog :title="mode === 'add' ? '添加菜单' : '编辑菜单'" :visible.sync="dialogFormVisible">
+      <el-form
+        :model="tempItem"
+        label-position="left"
+        label-width="120px"
+        style="width: 400px; margin-left:50px;"
+      >
+        <el-form-item label="父级菜单" prop="parentDeptId">
+          <el-col :span="24">
+            <el-select
+              v-model="tempItem.parentMenuId"
+              style="width: 100%"
+              class="filter-item"
+              placeholder="请选择父级菜单"
+              @change="parentMenuIdChange"
+            >
+              <el-option
+                v-for="item of parentMenuIds"
+                :key="item.menuId"
+                :label="item.menuName"
+                :value="item.menuId"
+              />
+            </el-select>
+          </el-col>
         </el-form-item>
-        <el-form-item label="部门编码  :" prop="deptCode">
-          <el-input v-model="temp.deptCode" οnkeyup="this.value=this.value.replace(/[\u4E00-\u9FA5]/g,'')" clearable />
+        <el-form-item label="菜单名称" prop="menuName">
+          <el-col :span="24">
+            <el-input v-model="tempItem.menuName" maxlength="15" placeholder="请输入菜单名称" clearable />
+          </el-col>
         </el-form-item>
-        <el-form-item label="上一级部门:" prop="parentDeptId">
-          <el-select v-model="temp.parentDeptId" class="filter-item" placeholder="请输入">
-            <el-option v-for="item in deptOptions" :key="item.deptId" :label="item.deptName" :value="item.deptId" />
-          </el-select>
+        <el-form-item label="菜单序号" prop="menuSequence">
+          <el-col :span="24">
+            <el-input-number
+              v-model="tempItem.menuSequence"
+              style="width: 100%"
+              :min="1"
+              label="菜单序号"
+            />
+          </el-col>
         </el-form-item>
-        <el-form-item label="部门状态 :" prop="status">
-          <el-radio-group v-model="temp.status">
-            <el-radio :label="0">
-              正常
-            </el-radio>
-            <el-radio :label="1">
-              禁用
-            </el-radio>
-          </el-radio-group>
+        <el-form-item label="菜单地址">
+          <el-col :span="24">
+            <el-input
+              v-model="tempItem.menuUrl"
+              placeholder="请输入菜单地址"
+              maxlength="15"
+              :disabled="mode === 'edit'"
+            >
+              <template slot="prepend">{{ prefixUrl }}</template>
+            </el-input>
+          </el-col>
         </el-form-item>
-
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">
-          取消
-        </el-button>
-        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          确定
-        </el-button>
+        <el-button @click="dialogFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleDialogConfirm">确定</el-button>
       </div>
     </el-dialog>
-
-    <el-dialog title="提示" :visible.sync="delVisible" width="300px" center>
-      <div class="del-dialog-cnt">删除不可恢复，是否确定删除？</div>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="delVisible = false">取 消</el-button>
-        <el-button type="primary" @click="deleteRow">确 定</el-button>
-      </span>
-    </el-dialog>
-    <!--  <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
-      <el-table :data="pvData" border="" fit="" highlight-current-row="" style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
-
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">
-          Confirm
-        </el-button> </span>
-    </el-dialog> -->
   </div>
 </template>
+
 <script>
-import Pagination from '@/components/Pagination'
-import waves from '@/directive/waves' // waves directive
-
-import { fetchDeptsList, searchList, getDepts, saveDept, updateDept, deleteDepts } from '@/api/system'
-
-const deptOptions = []
-const roleNameOptions = []
-// arr to obj, such as { CN : "China", US : "USA" }
-// const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
-//   acc[cur.key] = cur.display_name
-//   return acc
-// }, {})
-
+import TableMixins from '../../mixins/table-mixins'
 export default {
-  directives: { waves },
-
-  components: { Pagination },
+  name: 'Menu',
+  mixins: [TableMixins],
   data() {
     return {
-      list: [],
-      total: 1,
-      multipleSelection: [],
-      deptIds: '',
-      deptOptions: '',
-      delVisible: false, // 删除提示弹框的状态
-      isReadOnly: false,
-      listQuery: {
-        pageNum: 0,
-        pageSize: 20
-
-      },
-      temp: {
-        parentDeptId: '',
-        // deptId:'',
-        deptName: '',
-        deptCode: '',
-        status: ''
-        // 新增用户数据
-      },
+      parentMenuIds: [],
+      mode: 'add',
       dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: '编辑',
-        create: '新建'
-      },
-      rules: {
-        // deptId: [{ type: 'number', message: '请选择', trigger: ["blur",'change']}],
-        status: [{ required: true, message: '请选择', trigger: 'blur' }],
-        deptName: [{ required: true, message: '不能为空', trigger: 'blur' }],
-        deptCode: [{ required: true, message: '不能为空', trigger: 'blur' }],
-        parentDeptId: [{ required: true, message: '不能为空', trigger: 'blur' }]
+      prefixUrl: '/',
+      tempItem: {
+        parentMenuId: '',
+        menuName: '',
+        menuUrl: '',
+        menuSequence: 1
       }
     }
   },
-  created() {
-    this.getList()
+  mounted() {
+    this.getData()
   },
-
   methods: {
-    toggleSelection(rows) {
-      if (rows) {
-        rows.forEach(row => {
-          this.$refs.multipleTable.toggleRowSelection(row)
+    onAdd() {
+      this.mode = 'add'
+      this.tempItem = {
+        parentMenuId: '',
+        menuName: '',
+        menuUrl: '',
+        menuSequence: 1
+      }
+      this.prefixUrl = '/'
+      this.dialogFormVisible = true
+    },
+    handleUpdate(item) {
+      this.mode = 'edit'
+      let url = ''
+      const urls = item.menuUrl.split('/')
+      if (urls.length === 3) {
+        url = urls[2]
+        this.prefixUrl = '/' + urls[1]
+      } else if (urls.length === 2) {
+        url = item.menuUrl.split('/')[1]
+        this.prefixUrl = '/'
+      }
+      this.tempItem = {
+        menuId: item.menuId,
+        parentMenuId: item.parentMenuId,
+        menuName: item.menuName,
+        menuUrl: url,
+        menuSequence: item.menuSequence
+      }
+      this.dialogFormVisible = true
+    },
+    handleDelete(item) {
+      if (item.parentMenuId === null) {
+        if (item.children && item.children.length > 0) {
+          this.$errorMsg('此菜单下包含子菜单，不可以执行删除操作')
+          return
+        }
+      }
+      this.confirmDeleteSingle(_ => {
+        this.$http({
+          url: this.$urlPath.deleteMenu,
+          data: {
+            menuId: item.menuId
+          }
+        }).then(res => {
+          this.$successMsg('删除成功')
+          this.getData()
+        })
+      })
+    },
+    handleDialogConfirm() {
+      if (!this.tempItem.menuName) {
+        this.$errorMsg('菜单名称不能为空')
+        return
+      }
+      if (!this.tempItem.menuUrl) {
+        this.$errorMsg('菜单地址不能为空')
+        return
+      }
+      this.dialogFormVisible = false
+      this.tempItem.menuUrl =
+        (this.prefixUrl === '/' ? '/' : this.prefixUrl + '/') +
+        this.tempItem.menuUrl
+      if (this.mode === 'add') {
+        this.$http({
+          url: this.$urlPath.saveMenu,
+          data: this.tempItem
+        }).then(res => {
+          this.$successMsg('添加成功')
+          this.getData()
         })
       } else {
-        this.$refs.multipleTable.clearSelection()
-      }
-    },
-
-    getList() {
-      // 获取数据
-      this.listLoading = true
-      fetchDeptsList(this.listQuery).then(response => {
-        console.log(response.obj)
-        this.list = response.obj.list
-        this.total = response.obj.total
-        console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-    btnList() {
-      // 搜索
-      this.listLoading = true
-      fetchDeptsList(this.listQuery).then(response => {
-        console.log(response.obj)
-        this.list = response.obj.list
-        this.total = response.obj.total
-        console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-    handleFilter() {
-      this.listQuery.pageNum = 1
-      this.btnList()
-    },
-
-    getDept() {
-      getDepts().then(response => {
-        console.log(response.obj)
-        this.deptOptions = []
-        this.deptOptions = response.obj.list
-        // this.list = response.obj.list
-        // this.total = response.obj.total
-        // console.log(this.list)
-        // this.list = response.data.items
-        // this.listLoading = false
-      })
-    },
-    // 添加
-    handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-      this.getDept()
-    },
-    createData() {
-      console.log('这是验证提交')
-      this.$refs['dataForm'].validate((valid) => {
-        console.log(this.temp)
-        if (valid) {
-          saveDept(this.temp).then(() => {
-            this.getList()
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: 'Created Successfully',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    handleUpdate(row) {
-      console.log('更新操作')
-      console.log(row)
-      console.log(this.temp)
-      this.getDept()
-      // this.temp = Object.assign({}, row) // copy obj
-      this.temp.deptId = row.deptId
-      this.temp.deptName = row.deptName
-      this.temp.parentDeptId = row.parentDeptId
-      this.temp.deptCode = row.deptCode
-      this.temp.status = row.status
-      console.log(this.temp)
-      this.isReadOnly = true
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    updateData() {
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          // this.$delete(tempData, 'dept')
-          console.log('------')
-          console.log(tempData)
-          updateDept(tempData).then(() => {
-            // const index = this.list.findIndex(v => v.id === this.temp.id)
-            // this.list.splice(index, 1, this.temp)
-            this.isReadOnly = false
-            this.dialogFormVisible = false
-            this.getList()
-            this.$notify({
-              title: 'Success',
-              message: '修改成功',
-              type: 'success',
-              duration: 2000
-            })
-          })
-        }
-      })
-    },
-    handleDelete(row, index) {
-      deleteDepts().then(() => {
-        this.$notify({
-          title: 'Success',
-          message: 'Delete Successfully',
-          type: 'success',
-          duration: 2000
+        this.$http({
+          url: this.$urlPath.updateMenu,
+          data: this.tempItem
+        }).then(res => {
+          this.$successMsg('修改成功')
+          this.getData()
         })
-
-        this.list.splice(index, 1)
-      })
+      }
     },
-    deleteRow() {
-      console.log('批量删除')
-      deleteDepts(this.deptIds).then(response => {
-        if (response.status == '200') {
-          this.getList()
-          this.$message.success('删除成功')
+    parentMenuIdChange(value) {
+      this.prefixUrl = this.parentMenuIds.filter(
+        it => it.menuId === value
+      )[0].menuUrl
+    },
+    getData() {
+      this.$http({
+        url: this.$urlPath.queryAllMenu,
+        methods: this.HTTP_GET
+      }).then(res => {
+        this.loading = false
+        this.tableData = res.obj
+        if (this.tableData && this.tableData.length > 0) {
+          this.parentMenuIds = this.tableData.filter(
+            it => it.parentMenuId === null
+          )
         }
-      }).catch(error => {
-        console.log(error)
-        this.$message.error('删除失败')
       })
-      this.delVisible = false// 关闭删除提示模态框
-    },
-    // 批量删除
-    delAll() {
-      this.delVisible = true// 显示删除弹框
-      const length = this.multipleSelection.length
-      for (let i = 0; i < length; i++) {
-        this.deptIds = this.deptIds + this.multipleSelection[i].deptId + ','
-      }
-      // this.userIds=this.userIds.join();
-      console.log(this.deptIds)
-    },
-
-    handleSelectionChange(val) {
-      this.multipleSelection = val
-      for (let i = 0; i < length; i++) {
-        this.deptIds.push(this.multipleSelection[i].deptId)
-      }
-    },
-    resetTemp() {
-      this.temp = {
-        deptName: '',
-        parentDeptId: '',
-        deptCode: '',
-        status: 0
-      }
     }
-
   }
-
 }
-
 </script>
-  <style scoped="">
-
-  .el-form-item label:after {
-        content: "";
-        display: inline-block;
-        width: 100%;
-    }
-
-    .el-form-item__label {
-        text-align: right;
-        height: 50px;
-    }
-
-    .el-form-item.is-required .el-form-item__label:before {
-        content: none !important;
-    }
-</style>

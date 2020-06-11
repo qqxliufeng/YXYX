@@ -6,7 +6,8 @@
         <div class="flex-sub" />
         <el-button v-if="showAdd" type="warning" size="mini" @click="onadd">添加</el-button>
         <el-button v-if="showDelete" type="danger" size="mini" @click="ondelete">删除</el-button>
-        <el-button type="primary" size="mini" @click="onsearch">查询</el-button>
+        <el-button v-if="formModelArray.length > 0" type="primary" size="mini" @click="onsearch">查询</el-button>
+        <slot name="other" />
       </div>
       <el-form :inline="true" size="small" :gutter="5">
         <el-form-item
@@ -23,6 +24,14 @@
             :props="{label: 'name', value: 'name'}"
             clearable
           />
+          <el-select v-else-if="item.type === 'select'" v-model="item.value">
+            <el-option
+              v-for="it of item.selectOptions"
+              :key="it.value"
+              :label="it.label"
+              :value="it.value"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
     </el-card>

@@ -88,22 +88,19 @@ export default {
       this.$router.push({ name: 'AddGroupInfo' })
     },
     onDelete() {
-      if (this.multipleSelection.length === 0) {
-        this.$errorMsg('还未选择任何条目')
-        return
-      }
-      this.$warningConfirm('确定要删除此用户（们）吗？', () => {
-        const userIds = this.multipleSelection.map(it => it.userId).join(',')
-        this.$http({
-          url: this.$urlPath.deleteUsers,
-          data: {
-            userIds: userIds
-          }
-        }).then(res => {
-          this.$successMsg(res.msg)
-          this.getData()
+      if (this.canDeleteItems()) {
+        this.confirmDelete('userId', ids => {
+          this.$http({
+            url: this.$urlPath.deleteUsers,
+            data: {
+              userIds: ids
+            }
+          }).then(res => {
+            this.$successMsg(res.msg)
+            this.getData()
+          })
         })
-      })
+      }
     },
     onSearch() {
       this.$http({

@@ -68,6 +68,62 @@ export default {
       this.loading = true
       this.page = currentPage
     },
+    /**
+     * 判断是否可以下载
+     */
+    canDownItems() {
+      if (this.multipleSelection.length === 0) {
+        this.$errorMsg('还未选择任何条目')
+        return false
+      }
+      return true
+    },
+    /**
+     * 批量下载
+     * @idFieldName要删除的id
+     * @callback回调函数
+     */
+    confirmDown(idFieldName, callback) {
+      this.$warningConfirm('确定要下载此记录吗？', () => {
+        const recordIds = this.multipleSelection.map(it => it[idFieldName]).join(',')
+        if (callback) {
+          callback(recordIds)
+        }
+      })
+    },
+    /**
+     * 判断是否可以删除
+     */
+    canDeleteItems() {
+      if (this.multipleSelection.length === 0) {
+        this.$errorMsg('还未选择任何条目')
+        return false
+      }
+      return true
+    },
+    /**
+     * 批量删除
+     * @idFieldName要删除的id
+     * @callback回调函数
+     */
+    confirmDelete(idFieldName, callback) {
+      this.$warningConfirm('删除后不可恢复，确定要删除此记录吗？', () => {
+        const recordIds = this.multipleSelection.map(it => it[idFieldName]).join(',')
+        if (callback) {
+          callback(recordIds)
+        }
+      })
+    },
+    /**
+     * 删除一个
+     */
+    confirmDeleteSingle(callback) {
+      this.$warningConfirm('确定要删除此记录吗？', () => {
+        if (callback) {
+          callback()
+        }
+      })
+    },
     handleSelectionChange(val) {
       this.multipleSelection = val
     },

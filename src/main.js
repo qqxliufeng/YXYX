@@ -57,6 +57,7 @@ Vue.prototype.$privinceData = level
 Vue.prototype.HTTP_GET = HTTP_GET
 Vue.prototype.HTTP_POST = HTTP_POST
 Vue.prototype.$urlPath = urlPath
+Vue.prototype.$roles = JSON.parse(localStorage.getItem('roles'))[0]
 
 Vue.config.productionTip = false
 

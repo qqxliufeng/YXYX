@@ -48,7 +48,7 @@ const actions = {
       login({ phone: phone.trim(), password: password }).then(response => {
         const { obj } = response
         const data = obj
-        const roles = ['admin']
+        const roles = data.roles
         commit('SET_TOKEN', data.token)
         commit('SET_PHONE', data.phone)
         commit('SET_USERID', data.userId)
@@ -64,7 +64,7 @@ const actions = {
         localStorage.setItem('username', data.username)
         localStorage.setItem('roleId', data.roleId)
         localStorage.setItem('userId', data.userId)
-        localStorage.setItem('roles', roles)
+        localStorage.setItem('roles', JSON.stringify(roles))
         resolve()
       }).catch(error => {
         reject(error)
